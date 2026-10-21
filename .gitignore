@@ -1,0 +1,116 @@
+
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# ==========================================
+# Virtual Environments / Conda
+# ==========================================
+.venv/
+venv/
+env/
+ENV/
+.conda/
+conda-meta/
+.python-version
+
+# ==========================================
+# Environment Variables / Secrets
+# ==========================================
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+
+# ==========================================
+# IDE / Editor Files
+# ==========================================
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Testing / Coverage
+# ==========================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+test-results/
+
+# ==========================================
+# Jupyter Notebook
+# ==========================================
+.ipynb_checkpoints/
+
+# ==========================================
+# Build / Distribution
+# ==========================================
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ==========================================
+# Logs / Temporary Files
+# ==========================================
+*.log
+*.tmp
+*.temp
+*.bak
+*.cache
+.cache/
+
+# ==========================================
+# Operating System Files
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==========================================
+# Simulation Outputs
+# ==========================================
+# Ignore temporary or intermediate data
+results/temp/
+results/cache/
+results/debug/
+
+# Ignore large raw recordings
+*.avi
+*.mov
+*.mp4
+*.mkv
+
+# Keep final demonstration videos
+!evidence/videos/*.mp4
+
+# ==========================================
+# Project Evidence
+# ==========================================
+# Keep screenshots, charts, and final metrics
+!evidence/screenshots/
+!evidence/videos/
+!results/*.png
+!results/*.csv
+
+# ==========================================
+# Conda Environment Configuration
+# ==========================================
+# Keep environment.yml tracked in Git
+!environment.yml
