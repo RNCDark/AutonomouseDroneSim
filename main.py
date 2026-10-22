@@ -2,56 +2,53 @@
 # main.py
 
 from src.environment import Environment
-from src.pathfinding import AStar
+from src.drone import Drone, DroneState
 
 
 def main():
     environment = Environment()
-    pathfinder = AStar(environment)
-
-    path = pathfinder.find_path()
+    drone = Drone(environment)
 
     print("Autonomous Drone Simulation")
     print("-" * 40)
 
-    print(f"Grid size: {environment.width} x {environment.height}")
-    print(f"Static obstacles: {environment.get_obstacle_count()}")
+    print(f"Starting position: {drone.position}")
+    print(f"Destination: {drone.goal}")
 
-    if path:
-        print("\nA* Path Found!")
-        print(f"Path length: {len(path) - 1} movements")
-        print(f"Nodes explored: {pathfinder.nodes_explored}")
+    if not drone.start():
+        print("No valid route available.")
+        return
 
-        print("\nCalculated path:")
-        print(path)
+    print(f"Initial route length: {len(drone.path) - 1}")
+    print("\nBeginning autonomous navigation...\n")
 
-        print("\nEnvironment with path:")
+    # Limit the number of updates to prevent infinite loops.
+    max_updates = 500
 
-        path_cells = set(path)
+    for update_number in range(max_updates):
 
-        for row in range(environment.height):
-            symbols = []
+        if drone.state == DroneState.ARRIVED:
+            break
 
-            for col in range(environment.width):
-                position = (row, col)
+        previous_position = drone.position
 
-                if position == environment.start:
-                    symbol = "S"
-                elif position == environment.goal:
-                    symbol = "G"
-                elif position in path_cells:
-                    symbol = "*"
-                elif environment.is_obstacle(position):
-                    symbol = "#"
-                else:
-                    symbol = "."
+        drone.update()
 
-                symbols.append(symbol)
+        # Display movement only when the position changes.
+        if drone.position != previous_position:
+            print(
+                f"Step {drone.steps_taken:02d}: "
+                f"{previous_position} -> {drone.position}"
+            )
 
-            print(" ".join(symbols))
+    print("\nSimulation Results")
+    print("-" * 40)
 
-    else:
-        print("\nNo valid path found between start and goal.")
+    print(f"Final position: {drone.position}")
+    print(f"Final state: {drone.state.value}")
+    print(f"Steps taken: {drone.steps_taken}")
+    print(f"Reroutes: {drone.reroute_count}")
+    print(f"Pauses: {drone.pause_count}")
 
 if __name__ == "__main__":
     main()
