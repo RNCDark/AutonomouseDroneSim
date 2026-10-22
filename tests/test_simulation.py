@@ -88,3 +88,76 @@ def test_dynamic_obstacle_never_causes_collision():
         assert drone.position not in dynamic_obstacles
 
     assert drone.state == DroneState.ARRIVED
+
+
+def test_drone_recovers_after_temporary_blockage():
+    """
+    Verify that the drone pauses when all routes are blocked
+    and resumes navigation once the obstacles are removed.
+
+    This tests recovery behavior rather than ordinary
+    obstacle avoidance.
+    """
+
+    # Create a small, obstacle-free environment.
+    # The drone must cross column 1 to reach the goal.
+    environment = Environment(
+        width=3,
+        height=3,
+        obstacle_density=0.0,
+        seed=42,
+        start=(1, 0),
+        goal=(1, 2)
+    )
+
+    drone = Drone(environment)
+
+    # Verify that a valid initial route exists.
+    assert drone.start()
+
+    # Block the entire middle column.
+    # No path from the left side to the right side exists.
+    dynamic_obstacles = {
+        (0, 1),
+        (1, 1),
+        (2, 1)
+    }
+
+    # The drone should detect the blocked route
+    # and attempt to calculate an alternative.
+    drone.update(dynamic_obstacles)
+
+    # Because no alternative exists, it must pause.
+    assert drone.state == DroneState.PAUSED
+
+    # Confirm the drone did not move into an obstacle.
+    assert drone.position == (1, 0)
+    assert drone.position not in dynamic_obstacles
+
+    # Confirm that a rerouting attempt occurred.
+    assert drone.reroute_count == 1
+    assert drone.pause_count == 1
+
+    # Simulate moving obstacles leaving the corridor.
+    dynamic_obstacles.clear()
+
+    # Allow enough updates for route recovery
+    # and movement to the destination.
+    for _ in range(10):
+
+        if drone.state == DroneState.ARRIVED:
+            break
+
+        drone.update(dynamic_obstacles)
+
+        # Verify collision avoidance after every update.
+        assert drone.position not in dynamic_obstacles
+
+    # The drone should successfully recover and arrive.
+    assert drone.state == DroneState.ARRIVED
+    assert drone.position == environment.goal
+
+    # Only two movements are required once the
+    # middle column becomes available again.
+    assert drone.steps_taken == 2
+
