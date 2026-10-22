@@ -12,6 +12,7 @@ from src.config import (
 from src.environment import Environment
 from src.drone import Drone, DroneState
 from src.visualization import Visualization
+from src.metrics import SimulationMetrics
 
 
 class Simulation:
@@ -21,6 +22,14 @@ class Simulation:
         self.environment = Environment()
         self.drone = Drone(self.environment)
 
+        # Create the metrics collector before navigation begins.
+        self.metrics = SimulationMetrics(
+            self.environment,
+            self.drone
+        )
+
+        # Prevent duplicate result exports after arrival.
+        self.results_saved = False
         # Calculate the initial route before generating
         # dynamic obstacles, matching our previous test.
         self.drone.start()
@@ -112,12 +121,32 @@ class Simulation:
             self.drone_timer -= self.drone_interval
 
             if self.drone.state == DroneState.ARRIVED:
-                print("\nDestination reached!")
-                print(f"Time: {self.elapsed_time:.2f}s")
-                print(f"Steps: {self.drone.steps_taken}")
-                print(f"Reroutes: {self.drone.reroute_count}")
-                print(f"Pauses: {self.drone.pause_count}")
+                 # Export results only once when the destination
+                # is reached, even if the simulation continues
+                # rendering additional frames.
+                if not self.results_saved:
+
+                    results = self.metrics.calculate(
+                        elapsed_time=self.elapsed_time,
+                        scenario="dynamic"
+                    )
+
+                    print("\nSimulation Results")
+                    print("-" * 40)
+
+                    for metric, value in results.items():
+                        print(f"{metric}: {value}")
+
+                    # Save the experiment data for later analysis.
+                    self.metrics.save_to_csv(
+                        results,
+                        "results/simulation_metrics.csv"
+                    )
+
+                    self.results_saved = True
+
                 break
+
 
     def run(self):
         """Start the main Pygame simulation loop."""
