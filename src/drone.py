@@ -48,7 +48,7 @@ class Drone:
         # Record every position visited by the drone.
         self.travel_history = [self.position]
 
-    def plan_path(self):
+    def plan_path(self, blocked_cells=None):
         """
         Calculate a new route from the drone's current position.
 
@@ -58,7 +58,8 @@ class Drone:
 
         self.path = self.pathfinder.find_path(
             start=self.position,
-            goal=self.goal
+            goal=self.goal,
+            blocked_cells=blocked_cells
         )
 
         # A valid route includes the drone's current position.
@@ -98,7 +99,11 @@ class Drone:
 
         # If no route exists, attempt to plan one.
         if not self.path:
-            self.plan_path()
+            detected = self.sensor.scan(
+                self.position,
+                dynamic_obstacles
+            )
+            self.plan_path(blocked_cells=detected)
             return
 
         # Scan the surrounding environment.
@@ -130,9 +135,11 @@ class Drone:
             self.reroute_count += 1
 
             # Recalculate the route around known obstacles.
-            # Dynamic obstacle integration will be completed
-            # in the next development phase.
-            self.plan_path()
+            # visible to the drone's virtual sensor.
+            self.plan_path(blocked_cells=detected_obstacles)
+
+            # Do not move during this update.
+            # This simulates a brief pause while replanning.
             return
 
         # If the route contains only the current position,

@@ -34,7 +34,7 @@ class AStar:
         path.reverse()
         return path
 
-    def find_path(self, start=None, goal=None):
+    def find_path(self, start=None, goal=None, blocked_cells=None):
         """Return the shortest path or an empty list if unreachable."""
 
         if start is None:
@@ -45,10 +45,18 @@ class AStar:
 
         self.nodes_explored = 0
 
-        if not self.environment.is_walkable(start):
-            return []
+        # Dynamic obstacles are temporary blocked positions.
+        # We use a set for efficient membership checks.
+        blocked_cells = set() if blocked_cells is None else set(blocked_cells)
 
-        if not self.environment.is_walkable(goal):
+        # The starting and goal positions must be traversable.
+        # The drone cannot plan through static or known dynamic obstacles.
+        if (
+            not self.environment.is_walkable(start)
+            or not self.environment.is_walkable(goal)
+            or start in blocked_cells
+            or goal in blocked_cells
+        ):
             return []
 
         if start == goal:
@@ -95,6 +103,10 @@ class AStar:
             for neighbor in self.environment.get_neighbors(current):
                 # Don't revisit cells that have already been processed.
                 if neighbor in closed_set:
+                    continue
+
+                # Ignore cells occupied by detected dynamic obstacles.
+                if neighbor in blocked_cells:
                     continue
 
                 # Every movement costs one unit in our grid.

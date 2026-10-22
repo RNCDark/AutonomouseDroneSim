@@ -7,6 +7,7 @@ from src.config import (
     GRID_WIDTH,
     GRID_HEIGHT,
     OBSTACLE_DENSITY,
+    NUM_DYNAMIC_OBSTACLES,
     RANDOM_SEED,
     START_POSITION,
     GOAL_POSITION,
@@ -28,6 +29,7 @@ class Environment:
         self.width = width
         self.height = height
         self.obstacle_density = obstacle_density
+        self.dynamic_obstacles = set()
         self.start = start
         self.goal = goal
 
@@ -132,3 +134,104 @@ class Environment:
                 line.append(symbol)
 
             print(" ".join(line))
+    
+    def initialize_dynamic_obstacles(
+        self,
+        count=NUM_DYNAMIC_OBSTACLES,
+        excluded_positions=None
+    ):
+        """
+        Place moving obstacles in valid, unoccupied grid cells.
+
+        Excluded positions prevent obstacles from spawning
+        on the drone, destination, or other protected cells.
+        """
+        excluded = set(excluded_positions or [])
+        excluded.update({self.start, self.goal})
+
+        available = [
+            (row, col)
+            for row in range(self.height)
+            for col in range(self.width)
+            if (
+                self.is_walkable((row, col))
+                and (row, col) not in excluded
+            )
+        ]
+
+        if count > len(available):
+            raise ValueError(
+                "Not enough available cells for dynamic obstacles."
+            )
+
+        self.dynamic_obstacles = set()
+
+        # Sample unique cells without replacement.
+        if count > 0:
+            indices = self.rng.choice(
+                len(available),
+                size=count,
+                replace=False
+            )
+
+            for index in indices:
+                self.dynamic_obstacles.add(
+                    available[int(index)]
+                )
+
+        return self.dynamic_obstacles
+
+
+    def move_dynamic_obstacles(self, drone_position):
+        """
+        Move each dynamic obstacle by at most one grid cell.
+
+        Obstacles cannot move into static obstacles,
+        the destination, the drone, or each other.
+        """
+
+        # Keep track of occupied cells to prevent overlap.
+        occupied = set(self.dynamic_obstacles)
+        new_positions = set()
+
+        # Sort for reproducible update ordering.
+        for position in sorted(self.dynamic_obstacles):
+
+            # Free the current position for this obstacle.
+            occupied.remove(position)
+
+            row, col = position
+
+            candidates = [
+                position,          # Remain stationary
+                (row - 1, col),    # Up
+                (row + 1, col),    # Down
+                (row, col - 1),    # Left
+                (row, col + 1),    # Right
+            ]
+
+            valid_positions = [
+                candidate
+                for candidate in candidates
+                if (
+                    self.is_walkable(candidate)
+                    and candidate != drone_position
+                    and candidate != self.goal
+                    and candidate != self.start
+                    and candidate not in occupied
+                    and candidate not in new_positions
+                )
+            ]
+
+            # Remaining stationary is always a fallback
+            # because this obstacle's original cell is free.
+            selected = valid_positions[
+                int(self.rng.integers(len(valid_positions)))
+            ]
+
+            new_positions.add(selected)
+
+        self.dynamic_obstacles = new_positions
+
+        return self.dynamic_obstacles
+

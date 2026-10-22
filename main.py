@@ -9,20 +9,27 @@ def main():
     environment = Environment()
     drone = Drone(environment)
 
+    # Generate five moving obstacles without placing
+    # them directly on the initial planned route.
+    drone.start()
+
+    environment.initialize_dynamic_obstacles(
+        excluded_positions=set(drone.path)
+    )
+
     print("Autonomous Drone Simulation")
     print("-" * 40)
 
-    print(f"Starting position: {drone.position}")
-    print(f"Destination: {drone.goal}")
+    print(f"Start: {drone.position}")
+    print(f"Goal: {drone.goal}")
+    print(f"Static obstacles: {environment.get_obstacle_count()}")
+    print(
+        f"Dynamic obstacles: "
+        f"{len(environment.dynamic_obstacles)}"
+    )
 
-    if not drone.start():
-        print("No valid route available.")
-        return
+    print("\nBeginning dynamic navigation...\n")
 
-    print(f"Initial route length: {len(drone.path) - 1}")
-    print("\nBeginning autonomous navigation...\n")
-
-    # Limit the number of updates to prevent infinite loops.
     max_updates = 500
 
     for update_number in range(max_updates):
@@ -30,11 +37,26 @@ def main():
         if drone.state == DroneState.ARRIVED:
             break
 
+        # Update obstacle positions every third simulation step.
+        if update_number % 3 == 0:
+            environment.move_dynamic_obstacles(
+                drone_position=drone.position
+            )
+
         previous_position = drone.position
+        previous_reroutes = drone.reroute_count
 
-        drone.update()
+        # The drone observes the environment and acts.
+        drone.update(
+            dynamic_obstacles=environment.dynamic_obstacles
+        )
 
-        # Display movement only when the position changes.
+        if drone.reroute_count > previous_reroutes:
+            print(
+                f"Update {update_number:03d}: "
+                f"REROUTING at {drone.position}"
+            )
+
         if drone.position != previous_position:
             print(
                 f"Step {drone.steps_taken:02d}: "
