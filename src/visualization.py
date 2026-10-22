@@ -41,6 +41,14 @@ class Visualization:
         self.small_font = pygame.font.SysFont("consolas", 15)
         self.title_font = pygame.font.SysFont("consolas", 23, bold=True)
 
+        # Store the time until which the rerouting message
+        # should remain visible on the screen.
+        self.reroute_message_until = 0
+
+        # Remember the last observed reroute count so the
+        # notification only triggers for a new rerouting event.
+        self.previous_reroute_count = 0
+
     def cell_rect(self, position):
         """
         Convert a grid position into a Pygame rectangle.
@@ -256,6 +264,8 @@ class Visualization:
         self.draw_dynamic_obstacles()
         self.draw_goal()
         self.draw_drone(drone)
+        # Display recent autonomous rerouting decisions
+        self.draw_reroute_notification(drone)
         self.draw_dashboard(drone, elapsed_time, paused)
 
         # Display the completed frame.
@@ -264,3 +274,53 @@ class Visualization:
     def close(self):
         """Release Pygame resources."""
         pygame.quit()
+    
+    def draw_reroute_notification(self, drone):
+        """
+        Display a temporary notification when A* replanning occurs.
+
+        The message remains visible for 1.5 seconds so viewers
+        can recognize the drone's autonomous decision.
+        """
+
+        # Pygame tracks elapsed application time in milliseconds.
+        current_time = pygame.time.get_ticks()
+
+        # Detect whether the drone performed another reroute.
+        if drone.reroute_count > self.previous_reroute_count:
+
+            # Keep the notification visible for 1500 milliseconds.
+            self.reroute_message_until = current_time + 1500
+
+            # Update the stored counter.
+            self.previous_reroute_count = drone.reroute_count
+
+        # Display the notification while its timer is active.
+        if current_time < self.reroute_message_until:
+
+            message = self.font.render(
+                "REROUTING - OBSTACLE DETECTED",
+                True,
+                (255, 255, 255)
+            )
+
+            # Create a dark background for readability.
+            background = pygame.Rect(
+                70,
+                15,
+                500,
+                42
+            )
+
+            pygame.draw.rect(
+                self.screen,
+                (180, 75, 35),
+                background,
+                border_radius=8
+            )
+
+            # Center the message inside the notification.
+            self.screen.blit(
+                message,
+                message.get_rect(center=background.center)
+            )
