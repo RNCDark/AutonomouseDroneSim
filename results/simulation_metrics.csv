@@ -1,2 +1,2 @@
 scenario,success,completion_time_seconds,elapsed_time_seconds,optimal_distance,distance_traveled,extra_distance,path_efficiency_percent,reroutes,pauses
-dynamic,True,10.254,10.254,38,40,2,95.0,1,0
+dynamic,True,10.251,10.251,38,40,2,95.0,1,0
